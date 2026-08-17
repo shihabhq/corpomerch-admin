@@ -1,0 +1,91 @@
+@import "tailwindcss";
+
+/* ────────────────────────────────────────────────────────────────────────────
+   CorpoMerch Admin — design tokens.
+
+   Deliberately quieter than the storefront. This is a tool: neutral greys do
+   the structural work and the CorpoMerch red is reserved for primary actions,
+   destructive confirmation and active navigation. Light mode only, matching
+   the storefront.
+   ──────────────────────────────────────────────────────────────────────────── */
+
+@theme {
+  --color-brand: #d12429;
+  --color-brand-dark: #a81319;
+  --color-brand-tint: #fef2f2;
+
+  --color-ink: #0a0a0a;
+  --color-body: #3f3f46;
+  --color-muted: #71717a;
+  --color-faint: #a1a1aa;
+  --color-line: #e4e4e7;
+  --color-line-strong: #d4d4d8;
+  --color-surface: #fafafa;
+  --color-surface-alt: #f4f4f5;
+
+  --color-success: #15803d;
+  --color-success-tint: #f0fdf4;
+  --color-warning: #b45309;
+  --color-warning-tint: #fffbeb;
+  --color-info: #1d4ed8;
+  --color-info-tint: #eff6ff;
+
+  --font-sans:
+    var(--font-geist-sans), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, SFMono-Regular, monospace;
+}
+
+html {
+  font-family: var(--font-sans);
+}
+
+body {
+  background-color: var(--color-surface);
+  color: var(--color-body);
+}
+
+h1,
+h2,
+h3,
+h4 {
+  color: var(--color-ink);
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-brand);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+@utility scrollbar-thin {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-line-strong) transparent;
+}
+
+/* Radix open/close transitions used by Dialog and DropdownMenu. */
+@keyframes cm-in {
+  from {
+    opacity: 0;
+    transform: scale(0.97) translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes cm-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+[data-state="open"].cm-animate {
+  animation: cm-in 0.15s ease-out;
+}
+[data-state="closed"].cm-animate {
+  animation: cm-out 0.1s ease-in;
+}
