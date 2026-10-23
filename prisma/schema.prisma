@@ -583,3 +583,93 @@ model SiteSetting {
 
   @@map("site_settings")
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Corpomerch Connect — NFC digital business cards
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// One physical NFC/QR card. The admin creates it (slug -> link) BEFORE the
+/// customer has an account; the customer claims it by registering at that link.
+/// Claimed <=> ownerId is set. There is deliberately no status enum: ownerId
+/// being null after an auth user is deleted simply makes the card claimable again.
+model ConnectCard {
+  id   String @id @default(uuid()) @db.Uuid
+  /// The public URL path: <connect-host>/<slug>
+  slug String @unique
+  /// Admin-only reference, e.g. the customer's name or order number.
+  label String?
+
+  /// Supabase auth.users id of the owner. FK added in the migration.
+  ownerId    String?   @unique @map("owner_id") @db.Uuid
+  ownerEmail String?   @map("owner_email")
+  claimedAt  DateTime? @map("claimed_at") @db.Timestamptz(6)
+
+  /// Switched off by an admin: the link stops resolving and cannot be claimed.
+  isActive  Boolean  @default(true) @map("is_active")
+  createdBy String?  @map("created_by") @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  profile ConnectProfile?
+
+  @@index([createdAt])
+  @@map("connect_cards")
+}
+
+model ConnectProfile {
+  id     String @id @default(uuid()) @db.Uuid
+  cardId String @unique @map("card_id") @db.Uuid
+
+  fullName String  @default("") @map("full_name")
+  jobTitle String? @map("job_title")
+  company  String?
+  bio      String?
+
+  /// Path inside the public `connect-avatars` bucket: {userId}/avatar-{ts}.webp
+  avatarPath String? @map("avatar_path")
+
+  /// One of the theme ids in corpomerch-connect/src/lib/themes.ts
+  theme     String @default("crimson")
+  /// "system" | "light" | "dark" — the viewer can still override locally.
+  colorMode String @default("system") @map("color_mode")
+
+  /// Ordered array of { id, kind, label?, value }. Order is meaningful.
+  items Json @default("[]")
+
+
+  /// Owner-defined sections below the contact list, in display order. Each is
+  /// { id, type: "timeline" | "text" | "tags" | "cards", title, ... } — see corpomerch-connect/src/lib/sections.ts.
+  sections Json @default("[]")
+
+  /// Uploaded CV (PDF) in the public `connect-documents` bucket: {userId}/cv-{ts}.pdf
+  cvPath String? @map("cv_path")
+  /// The file name the visitor's download is saved as, e.g. "Ahmed-Akash-CV.pdf"
+  cvName String? @map("cv_name")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  card ConnectCard @relation(fields: [cardId], references: [id], onDelete: Cascade)
+
+  @@map("connect_profiles")
+}
+
+/// Pending email verification for a Connect sign-up. We send and check the
+/// code ourselves (Gmail SMTP) instead of using Supabase's confirmation mail.
+/// One row per user; a resend overwrites it. Only a keyed hash of the code is stored.
+model ConnectEmailVerification {
+  id       String @id @default(uuid()) @db.Uuid
+  /// Supabase auth.users id. FK added in the migration.
+  userId   String @unique @map("user_id") @db.Uuid
+  email    String
+  /// The card this sign-up is claiming; redeemed on successful verification.
+  cardSlug String @map("card_slug")
+
+  codeHash   String   @map("code_hash")
+  expiresAt  DateTime @map("expires_at") @db.Timestamptz(6)
+  /// Wrong guesses so far; the code is burned after 5.
+  attempts   Int      @default(0)
+  lastSentAt DateTime @default(now()) @map("last_sent_at") @db.Timestamptz(6)
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@map("connect_email_verifications")
+}

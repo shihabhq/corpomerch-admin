@@ -279,3 +279,12 @@ npx prisma migrate dev --create-only            for hand-written SQL
 npx prisma studio
 npm run seed                                    tsx prisma/seed.ts — idempotent, safe to re-run
 ```
+
+---
+
+## 11. Corpomerch Connect (NFC cards)
+
+- `/connect` creates card links (`ConnectCard`). A customer claims one by registering at `<CONNECT_APP_URL>/<slug>` in `../corpomerch-connect` — this app never creates customer accounts.
+- Schema for `connect_cards` / `connect_profiles` lives here; after changes run `npm run sync:schema` in both `corpomerch-client` and `corpomerch-connect`.
+- `CONNECT_APP_URL` is the public origin of the Connect app.
+- `npm run seed -- --only=connect-plus` loads just the Connect Plus product without touching other catalogue rows.

@@ -31,6 +31,7 @@ import { PrismaPg } from "@prisma/adapter-pg";
 import sharp from "sharp";
 
 import { categories } from "./seed-data/categories";
+import { connectCategory, connectPlus } from "./seed-data/connect";
 import { faqs, siteSettings } from "./seed-data/content";
 import { portfolioItems } from "./seed-data/portfolio";
 import { products } from "./seed-data/products";
@@ -581,7 +582,7 @@ async function processPortfolioImage(
   height: number;
   blurDataUrl: string;
 }> {
-  const sourcePath = path.join(PORTFOLIO_SOURCE_DIR, `${fileName}.jpg`);
+  const sourcePath = path.join(PORTFOLIO_SOURCE_DIR, fileName);
   const original = await readFile(sourcePath);
 
   const webp = await sharp(original)
@@ -596,7 +597,7 @@ async function processPortfolioImage(
     .toBuffer();
   const blurDataUrl = `data:image/webp;base64,${blur.toString("base64")}`;
 
-  const objectPath = `portfolio/${slug}/${String(index).padStart(2, "0")}-${fileName}.webp`;
+  const objectPath = `portfolio/${slug}/${String(index).padStart(2, "0")}-${path.parse(fileName).name}.webp`;
 
   if (supabase) {
     const { error } = await supabase.storage
@@ -817,6 +818,23 @@ async function writeReports() {
 
 // ─── Main ────────────────────────────────────────────────────────────────────
 
+/**
+ * Loads just Connect Plus (and its category). Existing categories are only
+ * looked up, never rewritten, so admin edits to the rest of the catalogue stay.
+ */
+async function seedConnectPlusOnly() {
+  log.step("Connect Plus only");
+  const c = connectCategory;
+  const row = await prisma.category.upsert({
+    where: { slug: c.slug },
+    create: { slug: c.slug, name: c.name, description: c.description, iconKey: c.iconKey, sortOrder: c.sortOrder, status: "PUBLISHED" },
+    update: { name: c.name, description: c.description, iconKey: c.iconKey, sortOrder: c.sortOrder },
+  });
+  const { product, skuCount, imageCount } = await seedProduct(connectPlus, new Map([[c.slug, row.id]]));
+  await recomputePricing(product.id);
+  log.ok(`${connectPlus.name} — ${skuCount} skus, ${imageCount} images`);
+}
+
 async function main() {
   console.log("\n\x1b[1m\x1b[31mCorpoMerch\x1b[0m catalogue seed");
   log.info(
@@ -824,6 +842,16 @@ async function main() {
       ? `images → Supabase Storage bucket "${BUCKET}"`
       : "images → corpomerch-client/public/products/ (SUPABASE_SECRET_KEY not set)",
   );
+
+  if (process.argv.includes("--only=portfolio")) {
+    await seedPortfolio();
+    return;
+  }
+
+  if (process.argv.includes("--only=connect-plus")) {
+    await seedConnectPlusOnly();
+    return;
+  }
 
   const categoryIds = await seedCategories();
 

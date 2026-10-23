@@ -32,6 +32,10 @@ export const NAV: NavGroup[] = [
     ],
   },
   {
+    title: "Connect",
+    items: [{ href: "/connect", label: "Connect cards", icon: "Nfc" }],
+  },
+  {
     title: "Site content",
     items: [
       { href: "/portfolio", label: "Portfolio", icon: "Images" },
@@ -49,3 +53,4 @@ export const NAV: NavGroup[] = [
     ],
   },
 ];
+
